@@ -1,0 +1,65 @@
+version: '3.8'
+
+networks:
+    nginx-php8-postgesql-node:
+
+services:
+    nginx-service:
+        image: nginx:stable-alpine
+        container_name: nginx-container
+        ports:
+            - "8080:80"
+        volumes:
+            - ./app:/var/www/project
+            - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+        depends_on:
+            - php8-service
+            - postgres-service
+        networks:
+            - nginx-php8-postgesql-node
+
+    php8-service:
+        build:
+            context: .
+            dockerfile: ./php/Dockerfile
+        container_name: php8-container
+        ports:
+            - "9000:9000"
+        volumes:
+            - ./app:/var/www/project
+        networks:
+            - nginx-php8-postgesql-node
+
+    postgres-service:
+        image: postgres
+        restart: always
+        container_name: postgres-container
+        ports:
+            - "5432:5432"
+        environment:
+            POSTGRES_PASSWORD: 'root'
+            POSTGRES_USER: 'root'
+            POSTGRES_DB: 'docker_symfony'
+        networks:
+            - nginx-php8-postgesql-node
+
+    adminer-service:
+        image: adminer
+        restart: always
+        container_name: adminer-container
+        ports:
+            - '8081:8080'
+        depends_on:
+            - postgres-service
+        networks:
+            - nginx-php8-postgesql-node
+        
+    # node
+    node-service:
+        image: node:latest
+        container_name: node-container
+        volumes:
+            - ./app:/var/www/project
+        working_dir: /var/www/project
+        networks:
+            - nginx-php8-postgesql-node
